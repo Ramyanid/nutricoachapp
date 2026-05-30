@@ -3,3 +3,4 @@ __pycache__/
 profile.json
 .env
 .claude/
+.streamlit/secrets.toml

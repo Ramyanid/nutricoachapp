@@ -1,12 +1,13 @@
 import requests
+import streamlit as st
 
-RECIPE_APP_ID  = "12c61805"
-RECIPE_APP_KEY = "04d173f71065bb5e617d71cabad8c6ee"
+RECIPE_APP_ID  = st.secrets["RECIPE_APP_ID"]
+RECIPE_APP_KEY = st.secrets["RECIPE_APP_KEY"]
 
 RECIPE_HEADERS = {"Edamam-Account-User": RECIPE_APP_ID}
 
-NUTRITION_APP_ID  = "e7e92f95"
-NUTRITION_APP_KEY = "c205efd25584f54ed0dd4a7501de0c07"
+NUTRITION_APP_ID  = st.secrets["NUTRITION_APP_ID"]
+NUTRITION_APP_KEY = st.secrets["NUTRITION_APP_KEY"]
 
 HEALTH_CONDITION_MAP = {
     "Diabetes":           ["sugar-conscious", "low-sugar"],
