@@ -25,8 +25,9 @@ if "profile" not in st.session_state:
     ### How it works
     1. **Setup** — enter your profile once (height, weight, goals, health conditions)
     2. **Dashboard** — set today's focus and log your workout to get your net calorie budget
-    3. **Kitchen Mode** — pick ingredients you have at home and get healthy recipes
-    4. **Dish Lookup** — type any dish and find out exactly how much you can eat
+    3. **Kitchen Mode** — choose between two options:
+       - 🍳 Pick ingredients from your kitchen and get healthy recipe suggestions
+       - 🔍 Type any dish to find out exactly how much you can eat
     """)
 else:
     profile = st.session_state.profile
