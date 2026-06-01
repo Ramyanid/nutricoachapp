@@ -2,7 +2,7 @@ import sys, os
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 import streamlit as st
-from utils.storage import load_profile
+from utils.database import load_latest_profile as load_profile
 
 st.set_page_config(
     page_title="NutriCoach",

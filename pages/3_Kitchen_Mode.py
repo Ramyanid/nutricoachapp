@@ -3,7 +3,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import streamlit as st
 from utils.edamam import search_recipes, analyze_dish
-from utils.storage import load_profile
+from utils.database import load_latest_profile as load_profile
 
 st.set_page_config(page_title="Kitchen Mode — NutriCoach", page_icon="🍳", layout="wide")
 st.title("🍳 Meal Planner")

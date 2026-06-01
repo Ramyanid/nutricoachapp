@@ -6,7 +6,7 @@ from utils.nutrition import (
     adjust_for_daily_focus, calculate_workout_burn,
     get_macros, apply_calorie_floor,
 )
-from utils.storage import load_profile
+from utils.database import load_latest_profile as load_profile
 
 st.set_page_config(page_title="Dashboard — NutriCoach", page_icon="📊", layout="wide")
 st.title("📊 Daily Dashboard")

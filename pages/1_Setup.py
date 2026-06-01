@@ -3,15 +3,15 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import streamlit as st
 from utils.nutrition import calculate_bmr, calculate_tdee, adjust_calories_for_goal
-from utils.storage import save_profile, load_profile
+from utils.database import save_profile, load_latest_profile, load_profile_by_email
 
 st.set_page_config(page_title="Setup — NutriCoach", page_icon="⚙️", layout="wide")
 st.title("⚙️ Profile Setup")
 st.markdown("Fill this in once. We use it to calculate your personalised daily calorie budget.")
 
-# Restore profile from disk if session was cleared
+# Restore profile from DB if session was cleared
 if "profile" not in st.session_state:
-    saved = load_profile()
+    saved = load_latest_profile()
     if saved:
         st.session_state.profile = saved
 
@@ -20,17 +20,18 @@ with st.form("profile_form"):
 
     with col1:
         st.subheader("About You")
-        name   = st.text_input("Name (optional)", placeholder="e.g. Priya")
-        age    = st.number_input("Age", min_value=15, max_value=80, value=25, step=1)
-        sex    = st.radio("Sex", ["Female", "Male"], horizontal=True)
+        name  = st.text_input("Name", placeholder="e.g. Priya")
+        email = st.text_input("Email", placeholder="e.g. priya@gmail.com")
+        age   = st.number_input("Age", min_value=15, max_value=80, value=25, step=1)
+        sex   = st.radio("Sex", ["Female", "Male"], horizontal=True)
 
-        unit   = st.radio("Unit system", ["Metric (cm / kg)", "Imperial (ft-in / lbs)"], horizontal=True)
+        unit  = st.radio("Unit system", ["Metric (cm / kg)", "Imperial (ft-in / lbs)"], horizontal=True)
         if unit == "Metric (cm / kg)":
             height_cm = float(st.number_input("Height (cm)", min_value=100, max_value=250, value=165, step=1))
             weight_kg = st.number_input("Weight (kg)", min_value=30.0, max_value=250.0, value=65.0, step=0.5)
         else:
             c1, c2 = st.columns(2)
-            ft = c1.number_input("Feet", min_value=4, max_value=7, value=5, step=1)
+            ft   = c1.number_input("Feet",   min_value=4, max_value=7,  value=5, step=1)
             inch = c2.number_input("Inches", min_value=0, max_value=11, value=5, step=1)
             height_cm = (ft * 12 + inch) * 2.54
             lbs = st.number_input("Weight (lbs)", min_value=66.0, max_value=550.0, value=143.0, step=1.0)
@@ -81,6 +82,7 @@ if submitted:
 
     profile = {
         "name":             name.strip() or "there",
+        "email":            email.strip(),
         "age":              age,
         "sex":              sex,
         "height_cm":        round(height_cm, 1),
