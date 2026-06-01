@@ -19,11 +19,22 @@ HEALTH_CONDITION_MAP = {
 }
 
 PIECE_KEYWORDS = [
+    # Indian breads & snacks
     "idli", "roti", "chapati", "dosa", "paratha", "puri", "naan",
-    "egg", "pancake", "waffle", "crepe", "bread slice",
+    "uttapam", "appam", "vada", "bhatura", "kulcha", "thepla",
+    "samosa", "kachori", "poha", "upma",
+    # Indian sweets (piece-based)
+    "ladoo", "barfi", "gulab jamun", "rasgulla", "jalebi",
+    # Eggs & breakfast items
+    "egg", "omelette", "pancake", "waffle", "crepe", "toast",
+    "french toast", "poached egg", "boiled egg",
+    # Baked goods
     "cookie", "muffin", "cupcake", "donut", "bagel", "croissant",
-    "burger", "sandwich", "wrap", "roll", "taco",
-    "dumpling", "samosa", "spring roll",
+    "brownie", "slice of cake", "bread slice", "biscuit",
+    # Mains & street food
+    "burger", "sandwich", "wrap", "roll", "taco", "pizza",
+    "dumpling", "spring roll", "kebab", "skewer",
+    "pita", "gyoza", "empanada",
 ]
 
 

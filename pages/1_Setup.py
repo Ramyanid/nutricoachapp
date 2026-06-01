@@ -3,7 +3,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import streamlit as st
 from utils.nutrition import calculate_bmr, calculate_tdee, adjust_calories_for_goal
-from utils.database import save_profile, load_latest_profile, load_profile_by_email
+from utils.database import save_profile, load_latest_profile
 
 st.set_page_config(page_title="Setup — NutriCoach", page_icon="⚙️", layout="wide")
 st.title("⚙️ Profile Setup")
@@ -15,64 +15,64 @@ if "profile" not in st.session_state:
     if saved:
         st.session_state.profile = saved
 
-with st.form("profile_form"):
-    col1, col2 = st.columns(2)
+col1, col2 = st.columns(2)
 
-    with col1:
-        st.subheader("About You")
-        name  = st.text_input("Name", placeholder="e.g. Priya")
-        email = st.text_input("Email", placeholder="e.g. priya@gmail.com")
-        age   = st.number_input("Age", min_value=15, max_value=80, value=25, step=1)
-        sex   = st.radio("Sex", ["Female", "Male"], horizontal=True)
+with col1:
+    st.subheader("About You")
+    name  = st.text_input("Name", placeholder="e.g. Priya")
+    email = st.text_input("Email", placeholder="e.g. priya@gmail.com")
+    age   = st.number_input("Age", min_value=15, max_value=80, value=25, step=1)
+    sex   = st.radio("Sex", ["Female", "Male"], horizontal=True)
 
-        unit  = st.radio("Unit system", ["Metric (cm / kg)", "Imperial (ft-in / lbs)"], horizontal=True)
-        if unit == "Metric (cm / kg)":
-            height_cm = float(st.number_input("Height (cm)", min_value=100, max_value=250, value=165, step=1))
-            weight_kg = st.number_input("Weight (kg)", min_value=30.0, max_value=250.0, value=65.0, step=0.5)
-        else:
-            c1, c2 = st.columns(2)
-            ft   = c1.number_input("Feet",   min_value=4, max_value=7,  value=5, step=1)
-            inch = c2.number_input("Inches", min_value=0, max_value=11, value=5, step=1)
-            height_cm = (ft * 12 + inch) * 2.54
-            lbs = st.number_input("Weight (lbs)", min_value=66.0, max_value=550.0, value=143.0, step=1.0)
-            weight_kg = lbs * 0.453592
+    # Unit toggle is a plain widget — switching it instantly re-renders the fields below
+    unit  = st.radio("Unit system", ["Metric (cm / kg)", "Imperial (ft-in / lbs)"], horizontal=True)
 
-        activity = st.selectbox("General activity level", [
-            "Sedentary (little/no exercise)",
-            "Lightly active (1-3 days/week)",
-            "Moderately active (3-5 days/week)",
-            "Very active (6-7 days/week)",
-            "Extremely active (athlete/physical job)",
-        ])
+    if unit == "Metric (cm / kg)":
+        height_cm = float(st.number_input("Height (cm)", min_value=100, max_value=250, value=165, step=1))
+        weight_kg = st.number_input("Weight (kg)", min_value=30.0, max_value=250.0, value=65.0, step=0.5)
+    else:
+        fc1, fc2 = st.columns(2)
+        ft   = fc1.number_input("Feet",   min_value=4, max_value=7,  value=5, step=1)
+        inch = fc2.number_input("Inches", min_value=0, max_value=11, value=5, step=1)
+        height_cm = (ft * 12 + inch) * 2.54
+        lbs = st.number_input("Weight (lbs)", min_value=66.0, max_value=550.0, value=143.0, step=1.0)
+        weight_kg = lbs * 0.453592
 
-    with col2:
-        st.subheader("Goals & Preferences")
-        fitness_goal = st.radio("Primary fitness goal", [
-            "Overall weight loss",
-            "Muscle building",
-            "Body toning / inch loss",
-            "Maintenance",
-        ])
+    activity = st.selectbox("General activity level", [
+        "Sedentary (little/no exercise)",
+        "Lightly active (1-3 days/week)",
+        "Moderately active (3-5 days/week)",
+        "Very active (6-7 days/week)",
+        "Extremely active (athlete/physical job)",
+    ])
 
-        health_conditions = st.multiselect(
-            "Health conditions (select all that apply)",
-            ["None", "Diabetes", "High Blood Pressure", "High Cholesterol",
-             "PCOS", "Thyroid condition", "Gluten intolerance"],
-            default=["None"],
-        )
+with col2:
+    st.subheader("Goals & Preferences")
+    fitness_goal = st.radio("Primary fitness goal", [
+        "Overall weight loss",
+        "Muscle building",
+        "Body toning / inch loss",
+        "Maintenance",
+    ])
 
-        diet_pref = st.radio("Diet preference", ["Non-vegetarian", "Vegetarian", "Vegan"], horizontal=True)
+    health_conditions = st.multiselect(
+        "Health conditions (select all that apply)",
+        ["None", "Diabetes", "High Blood Pressure", "High Cholesterol",
+         "PCOS", "Thyroid condition", "Gluten intolerance"],
+        default=["None"],
+    )
 
-        cuisine_prefs = st.multiselect(
-            "Cuisine preferences",
-            ["Indian", "Mediterranean", "Asian", "American", "Mexican",
-             "Italian", "Chinese", "Japanese", "Middle Eastern"],
-            default=["Indian"],
-        )
+    diet_pref = st.radio("Diet preference", ["Non-vegetarian", "Vegetarian", "Vegan"], horizontal=True)
 
-    submitted = st.form_submit_button("Save Profile ✅", type="primary", use_container_width=True)
+    cuisine_prefs = st.multiselect(
+        "Cuisine preferences",
+        ["Indian", "Mediterranean", "Asian", "American", "Mexican",
+         "Italian", "Chinese", "Japanese", "Middle Eastern"],
+        default=["Indian"],
+    )
 
-if submitted:
+st.divider()
+if st.button("Save Profile ✅", type="primary", use_container_width=True):
     if "None" in health_conditions and len(health_conditions) > 1:
         health_conditions.remove("None")
 
@@ -109,7 +109,7 @@ if submitted:
 
 elif "profile" in st.session_state:
     p = st.session_state.profile
-    st.info("Profile already saved. Re-submit the form to update it.")
+    st.info("Profile already saved. Re-submit to update.")
     c1, c2, c3 = st.columns(3)
     c1.metric("BMR",          f"{p['bmr']} kcal")
     c2.metric("TDEE",         f"{p['tdee']} kcal")
