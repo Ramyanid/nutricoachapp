@@ -23,10 +23,12 @@ daily_calories = st.session_state.get("daily_calories", profile["base_calories"]
 st.info(f"Calorie budget today: **{daily_calories} kcal** · Diet: **{profile['diet_pref']}**")
 
 # ── Mode selector ──────────────────────────────────────────────────────────────
+default_index = 1 if st.session_state.pop("kitchen_default_mode", "recipes") == "dish_lookup" else 0
 mode = st.radio(
     "What would you like to do?",
     ["🍳 Find recipes from my kitchen ingredients", "🔍 Look up how much of a dish I can eat"],
     horizontal=True,
+    index=default_index,
 )
 
 st.divider()

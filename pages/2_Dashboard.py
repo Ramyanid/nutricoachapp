@@ -103,9 +103,13 @@ c1, c2 = st.columns(2)
 with c1:
     st.markdown("**🍳 Have ingredients at home?**")
     st.markdown("Pick what's in your kitchen and get healthy recipe suggestions.")
-    st.page_link("pages/3_Kitchen_Mode.py", label="Go to Kitchen Mode", icon="🍳")
+    if st.button("Go to Kitchen Mode", icon="🍳", use_container_width=True):
+        st.session_state["kitchen_default_mode"] = "recipes"
+        st.switch_page("pages/3_Kitchen_Mode.py")
 
 with c2:
     st.markdown("**🔍 Know what you want to eat?**")
     st.markdown("Type any dish and find out exactly how much you can have.")
-    st.page_link("pages/3_Kitchen_Mode.py", label="Go to Dish Lookup", icon="🔍")
+    if st.button("Go to Dish Lookup", icon="🔍", use_container_width=True):
+        st.session_state["kitchen_default_mode"] = "dish_lookup"
+        st.switch_page("pages/3_Kitchen_Mode.py")

@@ -170,14 +170,17 @@ def analyze_dish(dish_name, daily_calories, meal_fraction=0.35):
         else:
             serving_display = f"{cups} cups (~{cal_per_unit} kcal per cup)"
 
+    # Fetch image + ingredients from recipe search (nutrition API has none)
+    recipe_extra = _recipe_fallback(dish_name)
+
     return {
         "name":            unit_data["food"],
         "cal_per_serving": cal_per_unit,
         "servings_allowed":round(units_allowed, 1),
         "serving_display": serving_display,
         "meal_budget":     meal_budget,
-        "image":           unit_data.get("image", ""),
-        "ingredients":     [],
+        "image":           recipe_extra.get("image", "") if recipe_extra else "",
+        "ingredients":     recipe_extra.get("ingredients", []) if recipe_extra else [],
         "nutrients_per_serving": {
             "protein": unit_data["protein"],
             "carbs":   unit_data["carbs"],
@@ -205,13 +208,14 @@ def _recipe_fallback(dish_name):
         servings = parsed["servings"]
         nutrients = r.get("totalNutrients", {})
         return {
-            "food":    parsed["name"],
-            "kcal":    parsed["cal_per_serving"],
-            "weight":  round(parsed["total_weight"] / servings) if parsed["total_weight"] else 0,
-            "protein": round(nutrients.get("PROCNT", {}).get("quantity", 0) / servings),
-            "carbs":   round(nutrients.get("CHOCDF", {}).get("quantity", 0) / servings),
-            "fat":     round(nutrients.get("FAT",    {}).get("quantity", 0) / servings),
-            "image":   parsed["image"],
+            "food":        parsed["name"],
+            "kcal":        parsed["cal_per_serving"],
+            "weight":      round(parsed["total_weight"] / servings) if parsed["total_weight"] else 0,
+            "protein":     round(nutrients.get("PROCNT", {}).get("quantity", 0) / servings),
+            "carbs":       round(nutrients.get("CHOCDF", {}).get("quantity", 0) / servings),
+            "fat":         round(nutrients.get("FAT",    {}).get("quantity", 0) / servings),
+            "image":       parsed["image"],
+            "ingredients": parsed["ingredients"],
         }
     except requests.RequestException:
         return None
