@@ -102,72 +102,116 @@ def search_recipes(ingredients, meal_budget, diet_pref, health_conditions, cuisi
     return filtered[:num_results], None
 
 
-def analyze_dish(dish_name, daily_calories, meal_fraction=0.35):
-    params = {
-        "type":    "public",
-        "q":       dish_name,
-        "app_id":  RECIPE_APP_ID,
-        "app_key": RECIPE_APP_KEY,
-    }
+def _nutrition_api_lookup(query):
+    """Call Nutrition Analysis API for a single ingredient query like '1 idli' or '1 cup rice'."""
     try:
-        resp = requests.get(
-            "https://api.edamam.com/api/recipes/v2",
-            params=params, headers=RECIPE_HEADERS, timeout=10
+        resp = requests.post(
+            "https://api.edamam.com/api/nutrition-details",
+            params={"app_id": NUTRITION_APP_ID, "app_key": NUTRITION_APP_KEY},
+            json={"ingr": [query], "title": query},
+            timeout=10,
         )
-        resp.raise_for_status()
+        if not resp.ok:
+            return None
+        data     = resp.json()
+        parsed   = data.get("ingredients", [{}])[0].get("parsed", [{}])[0]
+        if parsed.get("status") != "OK":
+            return None
+        nutrients = parsed.get("nutrients", {})
+        kcal      = nutrients.get("ENERC_KCAL", {}).get("quantity", 0)
+        if not kcal:
+            return None
+        return {
+            "food":    parsed.get("food", query).title(),
+            "kcal":    round(kcal),
+            "weight":  round(parsed.get("weight", 0)),
+            "protein": round(nutrients.get("PROCNT", {}).get("quantity", 0)),
+            "carbs":   round(nutrients.get("CHOCDF", {}).get("quantity", 0)),
+            "fat":     round(nutrients.get("FAT",    {}).get("quantity", 0)),
+        }
     except requests.RequestException:
         return None
 
-    hits = resp.json().get("hits", [])
-    if not hits:
+
+def analyze_dish(dish_name, daily_calories, meal_fraction=0.35):
+    meal_budget = round(daily_calories * meal_fraction)
+    dish_lower  = dish_name.lower()
+    is_piece    = any(kw in dish_lower for kw in PIECE_KEYWORDS)
+
+    # Try Nutrition Analysis API first — accurate per-unit data
+    unit_query = f"1 {dish_name}" if is_piece else f"1 cup {dish_name}"
+    unit_data  = _nutrition_api_lookup(unit_query)
+
+    # Fallback: try recipe search API if nutrition API can't parse the dish
+    if not unit_data:
+        unit_data = _recipe_fallback(dish_name)
+
+    if not unit_data:
         return None
 
-    r = hits[0]["recipe"]
-    parsed = _parse_recipe(r)
-
-    servings         = parsed["servings"]
-    cal_per_serving  = parsed["cal_per_serving"] or 1
-    total_weight     = parsed["total_weight"]
-    weight_per_srv   = total_weight / servings if total_weight else 0
-
-    meal_budget       = round(daily_calories * meal_fraction)
-    servings_allowed  = meal_budget / cal_per_serving
-
-    dish_lower = dish_name.lower()
-    is_piece   = any(kw in dish_lower for kw in PIECE_KEYWORDS)
+    cal_per_unit     = unit_data["kcal"] or 1
+    units_allowed    = meal_budget / cal_per_unit
 
     if is_piece:
-        # servings_allowed is already in portion units — do NOT multiply by yield
-        if servings_allowed < 0.75:
-            weight_note = f" (~{round(weight_per_srv * servings_allowed)}g)" if weight_per_srv else ""
-            serving_display = f"½ piece{weight_note}"
+        if units_allowed < 0.75:
+            serving_display = f"½ {dish_name} (~{cal_per_unit} kcal each)"
+        elif units_allowed < 1.5:
+            serving_display = f"1 {dish_name} (~{cal_per_unit} kcal each)"
         else:
-            n = max(round(servings_allowed), 1)
-            weight_note = f" (~{round(weight_per_srv * n)}g)" if weight_per_srv else ""
-            serving_display = f"{n} piece{'s' if n != 1 else ''}{weight_note}"
-    elif weight_per_srv > 0:
-        grams = weight_per_srv * servings_allowed
-        cups  = round(grams / 240, 1)
-        if cups < 0.5:
-            serving_display = f"{round(grams)}g (~{round(cups * 16)} tbsp)"
-        else:
-            serving_display = f"{cups} cup{'s' if cups != 1.0 else ''} (~{round(grams)}g)"
+            n = round(units_allowed)
+            serving_display = f"{n} {dish_name}s (~{cal_per_unit} kcal each)"
     else:
-        n = round(servings_allowed, 1)
-        serving_display = f"{n} serving{'s' if n != 1 else ''}"
+        cups = round(units_allowed, 1)
+        if cups < 0.5:
+            tbsp = round(cups * 16)
+            serving_display = f"{tbsp} tablespoons (~{cal_per_unit} kcal per cup)"
+        elif cups == 1.0:
+            serving_display = f"1 cup (~{cal_per_unit} kcal per cup)"
+        else:
+            serving_display = f"{cups} cups (~{cal_per_unit} kcal per cup)"
 
-    nutrients = r.get("totalNutrients", {})
     return {
-        "name":            parsed["name"],
-        "cal_per_serving": cal_per_serving,
-        "servings_allowed":round(servings_allowed, 1),
+        "name":            unit_data["food"],
+        "cal_per_serving": cal_per_unit,
+        "servings_allowed":round(units_allowed, 1),
         "serving_display": serving_display,
         "meal_budget":     meal_budget,
-        "image":           parsed["image"],
-        "ingredients":     parsed["ingredients"],
+        "image":           unit_data.get("image", ""),
+        "ingredients":     [],
         "nutrients_per_serving": {
+            "protein": unit_data["protein"],
+            "carbs":   unit_data["carbs"],
+            "fat":     unit_data["fat"],
+        },
+    }
+
+
+def _recipe_fallback(dish_name):
+    """Fallback to recipe search when nutrition API can't identify the dish."""
+    try:
+        resp = requests.get(
+            "https://api.edamam.com/api/recipes/v2",
+            params={"type": "public", "q": dish_name,
+                    "app_id": RECIPE_APP_ID, "app_key": RECIPE_APP_KEY},
+            headers=RECIPE_HEADERS, timeout=10,
+        )
+        if not resp.ok:
+            return None
+        hits = resp.json().get("hits", [])
+        if not hits:
+            return None
+        r        = hits[0]["recipe"]
+        parsed   = _parse_recipe(r)
+        servings = parsed["servings"]
+        nutrients = r.get("totalNutrients", {})
+        return {
+            "food":    parsed["name"],
+            "kcal":    parsed["cal_per_serving"],
+            "weight":  round(parsed["total_weight"] / servings) if parsed["total_weight"] else 0,
             "protein": round(nutrients.get("PROCNT", {}).get("quantity", 0) / servings),
             "carbs":   round(nutrients.get("CHOCDF", {}).get("quantity", 0) / servings),
             "fat":     round(nutrients.get("FAT",    {}).get("quantity", 0) / servings),
-        },
-    }
+            "image":   parsed["image"],
+        }
+    except requests.RequestException:
+        return None
